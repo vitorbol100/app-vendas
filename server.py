@@ -42,7 +42,11 @@ def ler_csv(nome):
     if not os.path.exists(caminho):
         return []
     with open(caminho, encoding='utf-8-sig') as f:
-        return list(csv.DictReader(f))
+        primeira = f.readline()
+        f.seek(0)
+        # Excel pt-BR exporta com ';'; detecta o separador automaticamente
+        sep = ';' if primeira.count(';') > primeira.count(',') else ','
+        return list(csv.DictReader(f, delimiter=sep))
 
 def fotos_base64():
     fotos = {}
