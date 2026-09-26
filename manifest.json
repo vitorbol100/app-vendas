@@ -1,0 +1,9 @@
+{
+  "name": "App Vendas",
+  "short_name": "Conebel",
+  "start_url": "app.html",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "icons": [{ "src": "Logo_Site.png", "sizes": "192x192", "type": "image/png" }]
+}

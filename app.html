@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1e3a8a">
+<link rel="manifest" href="manifest.json">
+<title>Conebel App</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
+body { background:#f1f5f9; }
+.tela-login { position:fixed; inset:0; background:linear-gradient(135deg,#1e3a8a,#2563eb);
+  display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+.login-card { background:#fff; border-radius:16px; padding:28px 22px; width:100%; max-width:380px; }
+.login-card img { display:block; margin:0 auto 12px; height:56px; object-fit:contain;
+  background:#fff; border-radius:10px; padding:6px 12px; box-shadow:0 4px 12px rgba(0,0,0,.15); }
+.login-card h1 { text-align:center; font-size:22px; color:#1e293b; }
+.login-sub { text-align:center; color:#64748b; font-size:13px; margin-bottom:20px; }
+.campo { margin-bottom:12px; }
+.campo label { display:block; font-size:12.5px; font-weight:600; color:#475569; margin-bottom:5px; }
+.campo input { width:100%; padding:11px 13px; border:1px solid #e2e8f0; border-radius:10px; font-size:15px; }
+.btn-entrar { width:100%; padding:12px; border:none; border-radius:10px; background:#2563eb;
+  color:#fff; font-size:15px; font-weight:700; cursor:pointer; margin-top:4px; }
+.link-manual { display:block; text-align:center; margin-top:14px; color:#2563eb;
+  font-size:13px; background:none; border:none; cursor:pointer; text-decoration:underline; }
+.erro { color:#dc2626; font-size:12.5px; text-align:center; margin-top:10px; min-height:16px; }
+.top-app { background:linear-gradient(135deg,#1e3a8a,#2563eb); color:#fff; padding:10px 14px;
+  display:flex; align-items:center; justify-content:space-between; }
+.top-app b { font-size:15px; }
+.top-app small { display:block; font-size:11px; opacity:.85; }
+.btn-sair-app { border:1px solid rgba(255,255,255,.5); background:transparent; color:#fff;
+  padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; cursor:pointer; }
+.tabs-app { display:flex; background:#fff; border-bottom:1px solid #e2e8f0; }
+.tab-app { flex:1; padding:11px 2px; border:none; background:none; font-size:11px;
+  font-weight:600; color:#64748b; border-bottom:3px solid transparent; cursor:pointer; }
+.tab-app.active { color:#2563eb; border-bottom-color:#2563eb; }
+.painel-app { display:none; padding:10px; }
+.painel-app.active { display:block; }
+.chips { display:flex; gap:6px; overflow-x:auto; padding:6px 2px; }
+.chip { border:1px solid #dbe4ee; background:#fff; border-radius:999px; padding:6px 12px;
+  font-size:12px; white-space:nowrap; cursor:pointer; }
+.chip.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+.card-app { background:#fff; border-radius:12px; padding:12px; margin-bottom:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.card-app h3 { font-size:14px; margin-bottom:8px; }
+.tabela-scroll { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-size:12px; }
+th { background:#2563eb; color:#fff; padding:7px 9px; text-align:left; white-space:nowrap; }
+td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
+.mini-foto { width:34px; height:34px; object-fit:cover; border-radius:6px; }
+.placeholder-foto { width:34px; height:34px; display:flex; align-items:center; justify-content:center; }
+.mes-comprou { color:#16a34a; font-weight:700; text-align:center; }
+.mes-nao-comprou { color:#cbd5e1; text-align:center; }
+.badge { padding:2px 8px; border-radius:999px; font-size:10.5px; font-weight:700; }
+.badge.ok { background:#dcfce7; color:#16a34a; }
+.badge.bad { background:#fee2e2; color:#dc2626; }
+.btn-grande { width:100%; padding:14px; border:none; border-radius:12px; font-size:15px;
+  font-weight:700; cursor:pointer; margin-bottom:10px; }
+.btn-auto { background:#2563eb; color:#fff; }
+.btn-manual { background:#f59e0b; color:#fff; }
+.muted { color:#64748b; font-size:12.5px; }
+.status-linha { display:flex; justify-content:space-between; padding:7px 0;
+  border-bottom:1px solid #f1f5f9; font-size:13px; }
+.cliente-linha-app { cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="telaLogin" class="tela-login">
+  <div class="login-card">
+    <img src="Logo_Site.png" alt="Conebel">
+    <h1>Conebel App</h1>
+    <p class="login-sub">Acesso do Representante de Negócios</p>
+    <div class="campo"><label>E-mail</label>
+      <input type="email" id="appEmail" placeholder="rn101@conebel.com.br"></div>
+    <div class="campo"><label>Senha</label>
+      <input type="password" id="appSenha" placeholder="••••••"></div>
+    <div class="campo"><label>Servidor (usado no WiFi da empresa)</label>
+      <input type="text" id="appServidor" placeholder="http://192.168.0.10:8000"></div>
+    <button class="btn-entrar" onclick="entrarApp()">Entrar</button>
+    <button class="link-manual" onclick="importarManual()">Recebeu o arquivo por e-mail? Importar aqui</button>
+    <div class="erro" id="appErro"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <header class="top-app">
+    <div><b>Conebel App</b><small id="appUserInfo">—</small></div>
+    <button class="btn-sair-app" onclick="sairApp()">Sair</button>
+  </header>
+  <nav class="tabs-app">
+    <button class="tab-app active" data-tab="clientes">🏬 Clientes e Produtos</button>
+    <button class="tab-app" data-tab="estaveis">📌 Estáveis e Instáveis</button>
+    <button class="tab-app" data-tab="dados">📥 Dados</button>
+  </nav>
+
+  <section id="tab-clientes" class="painel-app active">
+    <div class="card-app"><h3>📅 Mês</h3><div class="chips" id="chipsMes"></div></div>
+    <div class="card-app"><h3>🕐 Visita RN</h3><div class="chips" id="chipsVisitaRn"></div></div>
+    <div class="card-app"><h3>🐝 Visita Bees</h3><div class="chips" id="chipsVisitaBees"></div></div>
+    <div class="card-app"><h3>Clientes (PDVs)</h3>
+      <div class="tabela-scroll"><table id="tabelaAppClientes">
+        <thead><tr><th>PDV</th><th>Fantasia</th><th>Status</th><th>Inad.</th></tr></thead>
+        <tbody></tbody></table></div></div>
+    <div class="card-app"><h3>Produtos</h3>
+      <div class="tabela-scroll"><table id="tabelaAppProdutos">
+        <thead><tr><th>Foto</th><th>Cód</th><th>Descrição</th><th>Emb.</th>
+          <th>Qtde</th><th>Total R$</th><th>PDVs</th><th>Volume</th></tr></thead>
+        <tbody></tbody></table></div></div>
+  </section>
+
+  <section id="tab-estaveis" class="painel-app">
+    <div class="card-app"><h3>Histórico de Compra</h3>
+      <p class="muted">Toque em um cliente para abrir o histórico</p>
+      <div class="tabela-scroll"><table id="tabelaAppEstaveis">
+        <thead><tr><th>PDV</th><th>Fantasia</th></tr></thead>
+        <tbody></tbody></table></div></div>
+    <div id="detalheAppEstaveis"></div>
+  </section>
+
+  <section id="tab-dados" class="painel-app">
+    <div class="card-app"><h3>📊 Situação dos dados</h3><div id="statusDados"></div></div>
+    <div class="card-app"><h3>📥 Importação</h3>
+      <p class="muted" style="margin-bottom:12px;">Automático: conectado no WiFi da empresa.<br>
+      Manual: com o arquivo recebido por e-mail.</p>
+      <div class="campo"><label>Endereço do servidor</label>
+        <input type="text" id="servidorAddr" placeholder="http://192.168.0.10:8000"></div>
+      <button class="btn-grande btn-auto" id="btnAuto" onclick="importarAuto()">⚡ Importar Automático</button>
+      <button class="btn-grande btn-manual" onclick="importarManual()">📁 Importar Manual</button>
+      <input type="file" id="inputArquivo" accept=".json,application/json" hidden>
+    </div>
+  </section>
+</div>
+
+<script>
+// ===== Serviço offline (PWA) =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+let PACOTE = null;
+let filtroMes = 'todos';
+let filtroVisitaRn = 'todos';
+let filtroVisitaBees = 'todos';
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const DIAS = ['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
+
+function num(o, c) {
+  const v = parseFloat(String(o[c] ?? '').replace(/\./g,'').replace(',','.'));
+  return isNaN(v) ? 0 : v;
+}
+function fmtMoeda(v) { return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
+function fmtNum(v) { return v.toLocaleString('pt-BR'); }
+function dias(s) { return String(s||'').toUpperCase().split(/[\/,;]/).map(x=>x.trim()).filter(x=>DIAS.includes(x)); }
+function temDia(s, d) { return dias(s).includes(d); }
+function statusCliente(s) {
+  const v = String(s||'').trim().toLowerCase();
+  const ativo = v === '' || v === 'ativo' || v.startsWith('ativ');
+  return ativo ? '<span class="badge ok">Ativo</span>' : '<span class="badge bad">Bloqueado</span>';
+}
+function dadosSalvos() { try { return JSON.parse(localStorage.getItem('conebel_app_dados')); } catch(e){ return null; } }
+function sessaoSalva() { try { return JSON.parse(localStorage.getItem('conebel_app_sessao')); } catch(e){ return null; } }
+
+// ===== Login =====
+async function entrarApp() {
+  const email = document.getElementById('appEmail').value.trim();
+  const senha = document.getElementById('appSenha').value;
+  const servidor = document.getElementById('appServidor').value.trim().replace(/\/+$/,'');
+  const erro = document.getElementById('appErro');
+  erro.textContent = '';
+  if (!email || !senha) { erro.textContent = 'Informe e-mail e senha.'; return; }
+  try {
+    const resp = await fetch(servidor + '/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({perfil:'RN', email, senha})
+    });
+    const r = await resp.json();
+    if (r.ok) {
+      const sess = {email, senha, nome: r.usuario.nome, setor: r.usuario.setor, servidor};
+      localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
+      localStorage.setItem('conebel_app_servidor', servidor);
+      abrirApp(sess);
+    } else { erro.textContent = r.erro || 'Falha no login.'; }
+  } catch(e) {
+    const p = dadosSalvos();
+    if (p && email.toLowerCase().startsWith('rn' + p.rn)) {
+      const sess = {email, senha:'', nome:'RN ' + p.rn, setor:p.rn, servidor, offline:true};
+      localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
+      abrirApp(sess);
+    } else {
+      erro.textContent = 'Sem conexão com o servidor. Se já tem dados importados, use o mesmo e-mail do setor.';
+    }
+  }
+}
+
+function sairApp() {
+  localStorage.removeItem('conebel_app_sessao');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('telaLogin').style.display = 'flex';
+}
+
+// ===== Importações =====
+async function importarAuto() {
+  const sess = sessaoSalva();
+  const servidor = (document.getElementById('servidorAddr').value || (sess && sess.servidor) || '').replace(/\/+$/,'');
+  if (!servidor) { alert('Informe o endereço do servidor.'); return; }
+  if (!sess || !sess.senha) { alert('Entre com e-mail e senha para usar a importação automática.'); return; }
+  localStorage.setItem('conebel_app_servidor', servidor);
+  const btn = document.getElementById('btnAuto');
+  btn.textContent = '⏳ Importando...';
+  try {
+    const resp = await fetch(servidor + '/pacote?email=' + encodeURIComponent(sess.email) +
+                             '&senha=' + encodeURIComponent(sess.senha));
+    const r = await resp.json();
+    if (r.ok) {
+      PACOTE = r.pacote;
+      localStorage.setItem('conebel_app_dados', JSON.stringify(r.pacote));
+      renderizarTudo();
+      alert('✅ Dados do setor ' + r.pacote.rn + ' atualizados!');
+    } else { alert(r.erro || 'Falha na importação.'); }
+  } catch(e) {
+    alert('Não foi possível conectar ao servidor. Verifique o WiFi e o endereço.');
+  }
+  btn.textContent = '⚡ Importar Automático';
+}
+
+function importarManual() {
+  document.getElementById('inputArquivo').click();
+}
+
+document.getElementById('inputArquivo').addEventListener('change', e => {
+  const arquivo = e.target.files[0];
+  if (!arquivo) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const p = JSON.parse(ev.target.result);
+      if (!p.rn || !p.base || !p.produtos || !p.vendas) throw new Error('formato inválido');
+      PACOTE = p;
+      localStorage.setItem('conebel_app_dados', JSON.stringify(p));
+      if (!sessaoSalva()) {
+        const sess = {email: 'rn' + p.rn + '@conebel.com.br', senha:'', nome:'RN ' + p.rn, setor:p.rn, offline:true};
+        localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
+      }
+      abrirApp(sessaoSalva());
+      alert('✅ Dados do setor ' + p.rn + ' importados!');
+    } catch(err) { alert('Arquivo inválido: ' + err.message); }
+  };
+  reader.readAsText(arquivo);
+});
+
+// ===== Navegação =====
+document.querySelectorAll('.tab-app').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab-app').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.painel-app').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+function abrirApp(sess) {
+  document.getElementById('telaLogin').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('appUserInfo').textContent =
+    sess.nome + ' · Setor ' + sess.setor + (sess.offline ? ' · offline' : '');
+  PACOTE = dadosSalvos();
+  document.getElementById('servidorAddr').value =
+    localStorage.getItem('conebel_app_servidor') || sess.servidor || '';
+  renderizarTudo();
+}
+
+// ===== Renderização =====
+function baseFiltrada() {
+  let base = PACOTE.base;
+  if (filtroVisitaRn !== 'todos') base = base.filter(b => temDia(b.Vis_RN, filtroVisitaRn));
+  if (filtroVisitaBees !== 'todos') base = base.filter(b => temDia(b.Vis_BEES, filtroVisitaBees));
+  return base;
+}
+
+function montarChips(containerId, valores, atual, aoClicar) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '<button class="chip' + (atual==='todos'?' active':'') + '" data-v="todos">Todos</button>' +
+    valores.map(v => '<button class="chip' + (String(v)===String(atual)?' active':'') +
+      '" data-v="' + v + '">' + v + '</button>').join('');
+  c.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+    aoClicar(ch.dataset.v);
+    renderizarTudo();
+  }));
+}
+
+function renderizarTudo() {
+  if (!PACOTE) return;
+  const meses = [...new Set(PACOTE.vendas.map(v => parseInt(v.Mes,10)).filter(m=>m>0))].sort((a,b)=>a-b);
+  const diasRn = new Set(); const diasBees = new Set();
+  PACOTE.base.forEach(b => { dias(b.Vis_RN).forEach(d=>diasRn.add(d)); dias(b.Vis_BEES).forEach(d=>diasBees.add(d)); });
+  montarChips('chipsMes', meses, filtroMes, v => filtroMes = v);
+  montarChips('chipsVisitaRn', DIAS.filter(d=>diasRn.has(d)), filtroVisitaRn, v => filtroVisitaRn = v);
+  montarChips('chipsVisitaBees', DIAS.filter(d=>diasBees.has(d)), filtroVisitaBees, v => filtroVisitaBees = v);
+
+  // Clientes
+  let base = baseFiltrada();
+  if (filtroMes !== 'todos') {
+    const compradores = new Set(PACOTE.vendas.filter(v => String(v.Mes) === String(filtroMes)).map(v => String(v.Cliente)));
+    base = base.filter(b => compradores.has(String(b.PDV)));
+  }
+  document.querySelector('#tabelaAppClientes tbody').innerHTML = base.map(b => `<tr>
+    <td>${b.PDV}</td><td><b>${b.Fantasia}</b></td>
+    <td>${statusCliente(b.Status_PDV)}</td><td>${b['Status Inad'] || '—'}</td></tr>`).join('');
+
+  // Produtos
+  let vendas = PACOTE.vendas;
+  if (filtroMes !== 'todos') vendas = vendas.filter(v => String(v.Mes) === String(filtroMes));
+  const permitidos = new Set(baseFiltrada().map(b => String(b.PDV)));
+  if (filtroVisitaRn !== 'todos' || filtroVisitaBees !== 'todos') {
+    vendas = vendas.filter(v => permitidos.has(String(v.Cliente)));
+  }
+  const porProduto = {};
+  vendas.forEach(v => {
+    const c = v.Produto;
+    if (!porProduto[c]) porProduto[c] = {qtde:0, total:0, clientes:new Set(), volume:0};
+    porProduto[c].qtde += num(v,'Qtde_Agrupada');
+    porProduto[c].total += num(v,'Total_Agrupado');
+    porProduto[c].clientes.add(v.Cliente);
+    porProduto[c].volume += num(v,'Volume');
+  });
+  document.querySelector('#tabelaAppProdutos tbody').innerHTML = PACOTE.produtos.map(p => {
+    const a = porProduto[p.Cod_Produto] || {qtde:0,total:0,clientes:new Set(),volume:0};
+    const foto = (PACOTE.fotos || {})[p.Cod_Produto];
+    return `<tr>
+      <td>${foto ? `<img src="${foto}" class="mini-foto">` : '<div class="placeholder-foto">📦</div>'}</td>
+      <td>${p.Cod_Produto}</td><td><b>${p.Desc_Produto}</b></td><td>${p.Embalagem_Consolidada}</td>
+      <td>${fmtNum(a.qtde)}</td><td><b>${fmtMoeda(a.total)}</b></td>
+      <td>${fmtNum(a.clientes.size)}</td><td>${fmtNum(a.volume)}</td></tr>`;
+  }).join('');
+
+  // Estáveis e Instáveis
+  document.querySelector('#tabelaAppEstaveis tbody').innerHTML = PACOTE.base.map(b =>
+    `<tr class="cliente-linha-app" data-pdv="${b.PDV}">
+      <td>${b.PDV} ▶</td><td><b>${b.Fantasia}</b></td></tr>`).join('');
+  document.querySelectorAll('.cliente-linha-app').forEach(tr => {
+    tr.addEventListener('click', () => verHistorico(tr.dataset.pdv));
+  });
+
+  // Status
+  document.getElementById('statusDados').innerHTML =
+    `<div class="status-linha"><span>Setor</span><b>${PACOTE.rn}</b></div>
+     <div class="status-linha"><span>Gerado em</span><b>${PACOTE.gerado_em}</b></div>
+     <div class="status-linha"><span>Clientes</span><b>${PACOTE.base.length}</b></div>
+     <div class="status-linha"><span>Produtos</span><b>${PACOTE.produtos.length}</b></div>
+     <div class="status-linha"><span>Registros de venda</span><b>${PACOTE.vendas.length}</b></div>`;
+}
+
+function verHistorico(pdv) {
+  const cliente = PACOTE.base.find(b => String(b.PDV) === String(pdv));
+  if (!cliente) return;
+  const porProduto = {};
+  (PACOTE.vendasPorCliente ? PACOTE.vendasPorCliente[String(pdv)] || [] :
+    PACOTE.vendas.filter(v => String(v.Cliente) === String(pdv))).forEach(v => {
+    const m = parseInt(v.Mes, 10);
+    if (!m) return;
+    if (!porProduto[v.Produto]) porProduto[v.Produto] = {};
+    porProduto[v.Produto][m] = true;
+  });
+  const linhas = PACOTE.produtos.map(p => {
+    const regs = porProduto[p.Cod_Produto] || {};
+    const foto = (PACOTE.fotos || {})[p.Cod_Produto];
+    const celulas = MESES.map((n, i) =>
+      regs[i+1] ? '<td class="mes-comprou">X</td>' : '<td class="mes-nao-comprou">-</td>').join('');
+    return `<tr><td>${foto ? `<img src="${foto}" class="mini-foto">` : '📦'}</td>
+      <td>${p.Cod_Produto}</td><td>${p.Desc_Produto}</td>${celulas}</tr>`;
+  }).join('');
+  document.getElementById('detalheAppEstaveis').innerHTML =
+    `<div class="card-app"><h3>Histórico de ${cliente.Fantasia} <span class="muted">· PDV ${pdv}</span></h3>
+     <div class="tabela-scroll"><table class="matriz-produtos"><thead><tr>
+       <th>Foto</th><th>Cód</th><th>Descrição</th>${MESES.map(m=>`<th>${m}</th>`).join('')}
+     </tr></thead><tbody>${linhas}</tbody></table></div>
+     <button class="btn-grande" style="background:#e2e8f0;color:#1e293b;margin-top:10px;"
+       onclick="document.getElementById('detalheAppEstaveis').innerHTML=''">✕ Fechar</button></div>`;
+  document.getElementById('detalheAppEstaveis').scrollIntoView({behavior:'smooth'});
+}
+
+// ===== Início =====
+(function iniciar() {
+  const sess = sessaoSalva();
+  if (sess) { abrirApp(sess); }
+  else {
+    document.getElementById('appServidor').value = localStorage.getItem('conebel_app_servidor') || '';
+    document.getElementById('telaLogin').style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>

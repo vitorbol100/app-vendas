@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conebel — Painel de Vendas</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/chart.umd.min.js"></script>
+<script>window.Chart || document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');</script>
+</head>
+<body>
+  <!-- TELA DE LOGIN (sobreposta) -->
+<div id="telaLogin" class="tela-login">
+  <div class="login-card">
+    <img src="Logo_Site.png" class="login-logo-img" alt="Conebel">
+    <h1>Conebel</h1>
+    <p class="login-sub">Painel de Vendas · Acesso restrito</p>
+    <div class="perfil-btns">
+      <button class="perfil-btn active" id="btnApr" onclick="selecionarPerfil('APR')">
+        <b>APR</b><span>Acesso total</span>
+      </button>
+      <button class="perfil-btn" id="btnGv" onclick="selecionarPerfil('GV')">
+        <b>GV</b><span>Gerentes de Vendas</span>
+      </button>
+      <button class="perfil-btn" id="btnRn" onclick="selecionarPerfil('RN')">
+        <b>RN</b><span>Representante de Negócios</span>
+      </button>
+    </div>
+    <div class="campo">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" placeholder="seuemail@conebel.com.br" autocomplete="username">
+    </div>
+    <div class="campo">
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" placeholder="••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-entrar" onclick="entrar()">Entrar</button>
+    <div class="erro" id="erro"></div>
+  </div>
+</div>
+<header class="topbar">
+  <div class="brand">
+    <img src="Logo_Site.png" class="logo-img" alt="Conebel"
+         style="height:34px;width:auto;max-width:160px;object-fit:contain;background:#fff;border-radius:6px;padding:3px 6px;">
+    <div>
+      <h1>Conebel</h1>
+      <p>Painel de Vendas · Site</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-app" id="btnEnviarApp" style="display:none;">📱 Enviar p/ App</button>
+    <div class="user-info">
+      <span class="user-avatar" id="userAvatar">—</span>
+      <div class="user-text">
+        <strong id="userName">—</strong>
+        <span id="userRole">—</span>
+      </div>
+      <button class="btn-logout" id="btnSair">Sair</button>
+    </div>
+  </div>
+</header>
+  <nav class="tabs">
+    <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab" data-tab="rns">👥 RNs e Salas</button>
+    <button class="tab" data-tab="clientes">🏬 Clientes e Produtos</button>
+    <button class="tab" data-tab="relatorio">📈 Relatório Executivo</button>
+    <button class="tab" data-tab="fotos">🖼️ Fotos de Produtos</button>
+    <button class="tab" data-tab="estaveis">📌 Estáveis e Instáveis</button>
+  </nav>
+
+  <main class="content">
+
+    <!-- ABA 1: DASHBOARD -->
+    <section id="dashboard" class="panel active">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="chart-row">
+        <div class="card chart-card"><h3>Evolução Mensal de Vendas</h3><canvas id="chartMensal"></canvas></div>
+        <div class="card chart-card"><h3>Vendas por Setor</h3><canvas id="chartSetor"></canvas></div>
+      </div>
+      <div class="chart-row">
+        <div class="card chart-card"><h3>Volume por Mês</h3><canvas id="chartVolume"></canvas></div>
+        <div class="card chart-card"><h3>Top 10 Setores</h3><canvas id="chartTopSetores"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ABA 2: RNs E SALAS -->
+    <section id="rns" class="panel">
+      <div class="rns-layout">
+        <div class="card rns-tabela">
+          <h3>Visão Geral dos RNs</h3>
+          <p class="muted">Resumo consolidado por Representante de Negócios</p>
+          <div class="table-wrap">
+            <table id="tabelaRns">
+              <thead><tr>
+                <th>RN</th><th>Sala</th><th class="num">Clientes</th>
+                <th class="num">Produtos</th><th class="num">Volume</th><th class="num">Total de R$</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="rns-graficos">
+          <div class="card chart-card rns-chart"><h3>Vendas por Sala (Gerente)</h3><canvas id="chartSalas"></canvas></div>
+          <div class="card chart-card rns-chart"><h3>Top RNs por Faturamento</h3><canvas id="chartTopRns"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 3: CLIENTES E PRODUTOS -->
+<section id="clientes" class="panel">
+  <!-- Linha 1: Mês + RN lado a lado -->
+  <div class="filtros-row">
+    <div class="card filtros">
+      <h3>📅 Filtrar por Mês</h3>
+      <div class="mes-buttons" id="mesButtons"></div>
+    </div>
+    <div class="card filtros">
+      <h3>👥 Selecionar RN</h3>
+      <div class="rn-buttons" id="rnButtons"></div>
+    </div>
+  </div>
+
+  <!-- Linha 2: Visita RN + Visita Bees lado a lado -->
+  <div class="filtros-row">
+    <div class="card filtros">
+      <h3>🕐 Visita RN</h3>
+      <div class="mes-buttons" id="visitaRnButtons"></div>
+    </div>
+    <div class="card filtros">
+      <h3>🐝 Visita Bees</h3>
+      <div class="rn-buttons" id="visitaBeesButtons"></div>
+    </div>
+  </div>
+
+  <!-- Clientes + Produtos lado a lado, com rolagem interna -->
+  <div class="clientes-produtos-layout">
+    <div class="card cp-tabela">
+      <div class="card-header">
+        <h3>Clientes (PDVs)</h3>
+        <input type="text" id="buscaCliente" class="search" placeholder="🔍 Buscar...">
+      </div>
+      <div class="table-wrap scroll-box">
+        <table id="tabelaClientes">
+          <thead><tr>
+            <th>PDV</th><th>Nome Fantasia</th><th>Setor</th><th>RN</th><th>Status</th><th>Inadimplência</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card cp-tabela">
+      <div class="card-header">
+        <h3>Produtos</h3>
+        <input type="text" id="buscaProduto" class="search" placeholder="🔍 Buscar...">
+      </div>
+      <div class="table-wrap scroll-box">
+        <table id="tabelaProdutos">
+          <thead><tr>
+            <th>Foto</th><th>Código</th><th>Descrição</th><th>Embalagem</th>
+            <th class="num">DN Prod</th><th class="num">Total R$</th>
+            <th class="num">Qtde PDV Comp</th><th class="num">Volume TT</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+    <!-- ABA 4: RELATÓRIO EXECUTIVO -->
+    <section id="relatorio" class="panel">
+      <div class="card"><h3>Relatório Executivo — Resumo do Ano</h3><div id="relatorioConteudo"></div></div>
+    </section>
+
+    <!-- ABA 5: FOTOS DE PRODUTOS -->
+    <section id="fotos" class="panel">
+      <div class="card">
+        <h3>Upload de Fotos de Produtos</h3>
+        <p class="muted">Envie a imagem de um produto. Ela aparecerá automaticamente na aba "Clientes e Produtos".</p>
+        <div class="upload-box">
+          <input type="file" id="inputFoto" accept="image/*" hidden>
+          <button class="btn" id="btnEscolherFoto">📁 Escolher imagem</button>
+          <select id="selectProduto" class="search"></select>
+          <button class="btn primary" id="btnSalvarFoto">💾 Salvar foto</button>
+        </div>
+        <div class="foto-grid" id="fotoGrid"></div>
+      </div>
+    </section>
+
+    <!-- ABA 6: ESTÁVEIS E INSTÁVEIS -->
+<section id="estaveis" class="panel">
+  <div class="filtros-row">
+    <div class="card filtros">
+      <h3>👥 Filtro RN</h3>
+      <div class="rn-buttons" id="rnButtonsEstaveis"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Histórico de Compra</h3>
+    <p class="muted">Clique em um cliente para abrir o histórico de compra de todos os produtos</p>
+    <div class="table-wrap scroll-box">
+      <table id="tabelaClientesEstaveis">
+        <thead><tr><th>Clientes</th><th>Fantasia</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalheEstaveis" class="detalhe-estaveis" style="display:none;"></div>
+  </div>
+</section>
+
+  </main>
+
+  <footer class="footer">
+    <p>Conebel · Painel local de vendas · Dados até <span id="dataAtual"></span></p>
+  </footer>
+  
+  <!-- MODAL: ENVIAR DADOS PARA O APP -->
+<div id="modalApp" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📱 Enviar dados para o App dos RNs</h3>
+      <button class="modal-fechar" onclick="fecharModalApp()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-secao">
+        <h4>📶 RN conectado no WiFi da empresa</h4>
+        <p class="muted">O RN abre o app no celular e toca em <b>Importar Automático</b>. Endereço que o RN usa no app:</p>
+        <code id="enderecoServidor" class="endereco-servidor"></code>
+      </div>
+      <div class="modal-secao">
+        <h4>📧 RN fora da empresa (por e-mail)</h4>
+        <p class="muted">Selecione os RNs que vão receber os dados por e-mail:</p>
+        <div class="rn-check-grid" id="rnCheckList"></div>
+        <div class="campo-modal">
+          <label>Confirme a senha do APR para enviar:</label>
+          <input type="password" id="senhaAprModal" placeholder="Senha do APR">
+        </div>
+        <button class="btn primary" id="btnEnviarEmails">📧 Enviar por e-mail</button>
+        <div id="resultadoEnvio" class="muted" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
