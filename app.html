@@ -72,7 +72,7 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
   <div class="login-card">
     <img src="Logo_Site.png" alt="Conebel">
     <h1>Conebel App</h1>
-    <p class="login-sub">Acesso do Representante de Negócios</p>
+    <p class="login-sub">Acesso do Representante de Negócios · v2.1</p>
     <div class="campo"><label>E-mail</label>
       <input type="email" id="appEmail" placeholder="rn101@conebel.com.br"></div>
     <div class="campo"><label>Senha</label>
@@ -88,7 +88,7 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
 <!-- APP -->
 <div id="app" style="display:none;">
   <header class="top-app">
-    <div><b>Conebel App</b><small id="appUserInfo">—</small></div>
+    <div><b>Conebel App <span style="font-size:10px;opacity:.7">v2.1</span></b><small id="appUserInfo">—</small></div>
     <button class="btn-sair-app" onclick="sairApp()">Sair</button>
   </header>
   <nav class="tabs-app">
@@ -392,7 +392,7 @@ function verHistorico(pdv) {
     porProduto[v.Produto][m] = true;
   });
   const linhas = PACOTE.produtos.map(p => {
-    const regs = porProduto[p.Cod_Produto] || {};
+    const regs = porProduto[p.Cod_Produto] || {} ;
     const foto = (PACOTE.fotos || {})[p.Cod_Produto];
     const celulas = MESES.map((n, i) =>
       regs[i+1] ? '<td class="mes-comprou">X</td>' : '<td class="mes-nao-comprou">-</td>').join('');
