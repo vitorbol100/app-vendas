@@ -433,7 +433,7 @@ function verHistorico(pdv) {
     const foto = (PACOTE.fotos || {})[p.Cod_Produto];
     const celulas = MESES.map((n, i) =>
       regs[i+1] ? '<td class="mes-comprou">X</td>' : '<td class="mes-nao-comprou">-</td>').join('');
-    return `<tr><td>${foto ? `<img src="${foto}" class="mini-foto">` : '📦'}</td>
+    return `<tr class="linha-matriz" data-cod="${p.Cod_Produto}"><td>${foto ? `<img src="${foto}" class="mini-foto">` : '📦'}</td>
       <td>${p.Cod_Produto}</td><td>${p.Desc_Produto}</td>${celulas}</tr>`;
   }).join('');
   document.getElementById('detalheAppEstaveis').innerHTML =
@@ -443,6 +443,8 @@ function verHistorico(pdv) {
      </tr></thead><tbody>${linhas}</tbody></table></div>
      <button class="btn-grande" style="background:#e2e8f0;color:#1e293b;margin-top:10px;"
        onclick="document.getElementById('detalheAppEstaveis').innerHTML=''">✕ Fechar</button></div>`;
+  document.querySelectorAll('#detalheAppEstaveis .linha-matriz').forEach(tr =>
+    tr.addEventListener('click', () => selecionarLinha(tr)));
   document.getElementById('detalheAppEstaveis').scrollIntoView({behavior:'smooth'});
 }
 
