@@ -44,7 +44,25 @@ body { background:#f1f5f9; }
 .card-app { background:#fff; border-radius:12px; padding:12px; margin-bottom:12px;
   box-shadow:0 1px 3px rgba(0,0,0,.06); }
 .card-app h3 { font-size:14px; margin-bottom:8px; }
-.tabela-scroll { overflow-x:auto; }
+.tabela-scroll { overflow-x:auto; overflow-y:hidden; }
+/* Caixa de rolagem vertical com cabecalho fixo */
+.tabela-caixa { max-height:60vh; overflow-y:auto; border:1px solid #e2e8f0; border-radius:10px;
+  background:#fff; -webkit-overflow-scrolling:touch; }
+.tabela-caixa table { border-collapse:separate; border-spacing:0; width:100%; }
+.tabela-caixa thead th { position:sticky; top:0; z-index:2; box-shadow:0 1px 0 #1d4ed8; }
+/* Linha selecionada (toque do RN) */
+tr.linha-selecionada td { background:#dbeafe !important; }
+/* Tabelas enquadradas no celular: fonte menor mas legivel, celulas compactas */
+table { font-size:11.5px; }
+th { padding:6px 7px; }
+td { padding:6px 7px; }
+.tabela-caixa th { font-size:10.5px; padding:6px 7px; }
+.desc-produto { display:inline-block; max-width:150px; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; vertical-align:middle; }
+.emb-produto { display:inline-block; max-width:70px; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; vertical-align:middle; }
+/* Colunas numericas nao quebram linha */
+.tabela-caixa td, .tabela-caixa th { white-space:nowrap; }
 table { border-collapse:collapse; width:100%; font-size:12px; }
 th { background:#2563eb; color:#fff; padding:7px 9px; text-align:left; white-space:nowrap; }
 td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
@@ -63,6 +81,17 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
 .status-linha { display:flex; justify-content:space-between; padding:7px 0;
   border-bottom:1px solid #f1f5f9; font-size:13px; }
 .cliente-linha-app { cursor:pointer; }
+/* Celular: fonte compacta mas legivel, celulas apertadas, descricao encurtada */
+@media (max-width: 480px) {
+  table { font-size:10px; }
+  th { padding:4px 4px; }
+  td { padding:4px 4px; }
+  .mini-foto { width:26px; height:26px; }
+  .placeholder-foto { width:26px; height:26px; }
+  .desc-produto { max-width:92px; }
+  .emb-produto { max-width:55px; }
+  .tabela-caixa { border-left:none; border-right:none; border-radius:0; margin-left:-10px; margin-right:-10px; }
+}
 </style>
 </head>
 <body>
@@ -102,20 +131,20 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
     <div class="card-app"><h3>🕐 Visita RN</h3><div class="chips" id="chipsVisitaRn"></div></div>
     <div class="card-app"><h3>🐝 Visita Bees</h3><div class="chips" id="chipsVisitaBees"></div></div>
     <div class="card-app"><h3>Clientes (PDVs)</h3>
-      <div class="tabela-scroll"><table id="tabelaAppClientes">
+      <div class="tabela-caixa tabela-scroll"><table id="tabelaAppClientes">
         <thead><tr><th>PDV</th><th>Fantasia</th><th>Status</th><th>Inad.</th></tr></thead>
         <tbody></tbody></table></div></div>
     <div class="card-app"><h3>Produtos</h3>
-      <div class="tabela-scroll"><table id="tabelaAppProdutos">
-        <thead><tr><th>Foto</th><th>Cód</th><th>Descrição</th><th>Emb.</th>
-          <th>Qtde</th><th>Total R$</th><th>PDVs</th><th>Volume</th></tr></thead>
+      <div class="tabela-caixa tabela-scroll"><table id="tabelaAppProdutos">
+        <thead><tr><th></th><th>Cód</th><th>Descrição</th><th>Emb.</th>
+          <th>Qtd</th><th>Total R$</th><th>PDVs</th><th>Vol</th></tr></thead>
         <tbody></tbody></table></div></div>
   </section>
 
   <section id="tab-estaveis" class="painel-app">
     <div class="card-app"><h3>Histórico de Compra</h3>
       <p class="muted">Toque em um cliente para abrir o histórico</p>
-      <div class="tabela-scroll"><table id="tabelaAppEstaveis">
+      <div class="tabela-caixa tabela-scroll"><table id="tabelaAppEstaveis">
         <thead><tr><th>PDV</th><th>Fantasia</th></tr></thead>
         <tbody></tbody></table></div></div>
     <div id="detalheAppEstaveis"></div>
@@ -309,6 +338,12 @@ function montarChips(containerId, valores, atual, aoClicar) {
   }));
 }
 
+function selecionarLinha(tr, tabela) {
+  const ja = tr.classList.contains('linha-selecionada');
+  tr.closest('tbody').querySelectorAll('tr.linha-selecionada').forEach(x => x.classList.remove('linha-selecionada'));
+  if (!ja) tr.classList.add('linha-selecionada');
+}
+
 function renderizarTudo() {
   if (!PACOTE) {
     ['tabelaAppClientes', 'tabelaAppProdutos', 'tabelaAppEstaveis'].forEach(id =>
@@ -333,9 +368,11 @@ function renderizarTudo() {
     const compradores = new Set(PACOTE.vendas.filter(v => String(v.Mes) === String(filtroMes)).map(v => String(v.Cliente)));
     base = base.filter(b => compradores.has(String(b.PDV)));
   }
-  document.querySelector('#tabelaAppClientes tbody').innerHTML = base.map(b => `<tr>
+  document.querySelector('#tabelaAppClientes tbody').innerHTML = base.map(b => `<tr class="cliente-linha-app" data-pdv="${b.PDV}">
     <td>${b.PDV}</td><td><b>${b.Fantasia}</b></td>
     <td>${statusCliente(b.Status_PDV)}</td><td>${b['Status Inad'] || '—'}</td></tr>`).join('');
+  document.querySelectorAll('#tabelaAppClientes tbody tr').forEach(tr =>
+    tr.addEventListener('click', () => selecionarLinha(tr)));
 
   // Produtos
   let vendas = PACOTE.vendas;
@@ -358,7 +395,7 @@ function renderizarTudo() {
     const foto = (PACOTE.fotos || {})[p.Cod_Produto];
     return `<tr>
       <td>${foto ? `<img src="${foto}" class="mini-foto">` : '<div class="placeholder-foto">📦</div>'}</td>
-      <td>${p.Cod_Produto}</td><td><b>${p.Desc_Produto}</b></td><td>${p.Embalagem_Consolidada}</td>
+      <td>${p.Cod_Produto}</td><td><b class="desc-produto" title="${p.Desc_Produto}">${p.Desc_Produto}</b></td><td><span class="emb-produto" title="${p.Embalagem_Consolidada}">${p.Embalagem_Consolidada}</span></td>
       <td>${fmtNum(a.qtde)}</td><td><b>${fmtMoeda(a.total)}</b></td>
       <td>${fmtNum(a.clientes.size)}</td><td>${fmtNum(a.volume)}</td></tr>`;
   }).join('');
@@ -367,8 +404,8 @@ function renderizarTudo() {
   document.querySelector('#tabelaAppEstaveis tbody').innerHTML = PACOTE.base.map(b =>
     `<tr class="cliente-linha-app" data-pdv="${b.PDV}">
       <td>${b.PDV} ▶</td><td><b>${b.Fantasia}</b></td></tr>`).join('');
-  document.querySelectorAll('.cliente-linha-app').forEach(tr => {
-    tr.addEventListener('click', () => verHistorico(tr.dataset.pdv));
+  document.querySelectorAll('#tabelaAppEstaveis tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => { selecionarLinha(tr); verHistorico(tr.dataset.pdv); });
   });
 
   // Status
@@ -401,7 +438,7 @@ function verHistorico(pdv) {
   }).join('');
   document.getElementById('detalheAppEstaveis').innerHTML =
     `<div class="card-app"><h3>Histórico de ${cliente.Fantasia} <span class="muted">· PDV ${pdv}</span></h3>
-     <div class="tabela-scroll"><table class="matriz-produtos"><thead><tr>
+     <div class="tabela-caixa tabela-scroll"><table class="matriz-produtos"><thead><tr>
        <th>Foto</th><th>Cód</th><th>Descrição</th>${MESES.map(m=>`<th>${m}</th>`).join('')}
      </tr></thead><tbody>${linhas}</tbody></table></div>
      <button class="btn-grande" style="background:#e2e8f0;color:#1e293b;margin-top:10px;"
