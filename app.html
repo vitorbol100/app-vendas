@@ -185,7 +185,7 @@ async function entrarApp() {
   erro.textContent = '';
   if (!email || !senha) { erro.textContent = 'Informe e-mail e senha.'; return; }
   try {
-    const resp = await fetch('servidor + '/login', {
+    const resp = await fetch(servidor + '/login', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({perfil:'RN', email, senha})
     });
@@ -283,7 +283,7 @@ function abrirApp(sess) {
   document.getElementById('telaLogin').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('appUserInfo').textContent =
-    sess.nome + ' · Setor ' + sess.setor + (sess.offline ? 'offline' : '');
+    sess.nome + ' · Setor ' + sess.setor + (sess.offline ? ' · offline' : '');
   PACOTE = dadosSalvos(sess.setor);
   document.getElementById('servidorAddr').value =
     localStorage.getItem('conebel_app_servidor') || sess.servidor || '';
@@ -374,7 +374,7 @@ function renderizarTudo() {
   // Status
   document.getElementById('statusDados').innerHTML =
     `<div class="status-linha"><span>Setor</span><b>${PACOTE.rn}</b></div>
-     <div class="status-linha">Gerado em</span><b>${PACOTE.gerado_em}</b></div>
+     <div class="status-linha"><span>Gerado em</span><b>${PACOTE.gerado_em}</b></div>
      <div class="status-linha"><span>Clientes</span><b>${PACOTE.base.length}</b></div>
      <div class="status-linha"><span>Produtos</span><b>${PACOTE.produtos.length}</b></div>
      <div class="status-linha"><span>Registros de venda</span><b>${PACOTE.vendas.length}</b></div>`;
@@ -411,7 +411,6 @@ function verHistorico(pdv) {
 
 // ===== Início =====
 (function iniciar() {
-  const sess = sessaoSalva();
   const sess = sessaoSalva();
   if (sess) { abrirApp(sess); }
   else {
