@@ -214,10 +214,13 @@ async function entrarApp() {
   erro.textContent = '';
   if (!email || !senha) { erro.textContent = 'Informe e-mail e senha.'; return; }
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
     const resp = await fetch(servidor + '/login', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({perfil:'RN', email, senha})
+      body: JSON.stringify({perfil:'RN', email, senha}), signal: ctrl.signal
     });
+    clearTimeout(timer);
     const r = await resp.json();
     if (r.ok) {
       const sess = {email, senha, nome: r.usuario.nome, setor: r.usuario.setor, servidor};
@@ -230,7 +233,8 @@ async function entrarApp() {
     const m = email.toLowerCase().match(/rn(\d+)/);
     const p = m ? dadosSalvos(m[1]) : null;
     if (p && p.rn) {
-      const sess = {email, senha:'', nome:'RN ' + p.rn, setor:p.rn, servidor, offline:true};
+      // mantem a senha digitada: permite Importar Automatico quando o servidor voltar
+      const sess = {email, senha, nome:'RN ' + p.rn, setor:p.rn, servidor, offline:true};
       localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
       abrirApp(sess);
     } else {
@@ -251,7 +255,7 @@ async function importarAuto() {
   const sess = sessaoSalva();
   const servidor = (document.getElementById('servidorAddr').value || (sess && sess.servidor) || '').replace(/\/+$/,'');
   if (!servidor) { alert('Informe o endereço do servidor.'); return; }
-  if (!sess || !sess.senha) { alert('Entre com e-mail e senha para usar a importação automática.'); return; }
+  if (!sess || !sess.senha) { alert('Para usar a importação automática, SAIA do app e entre novamente com seu e-mail e senha.'); return; }
   localStorage.setItem('conebel_app_servidor', servidor);
   const btn = document.getElementById('btnAuto');
   btn.textContent = '⏳ Importando...';
