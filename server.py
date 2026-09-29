@@ -114,6 +114,14 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
+    def end_headers(self):
+        # Nunca cachear: dados de venda mudam com frequencia e o navegador
+        # precisa sempre buscar a versao nova (sem precisar de Ctrl+F5)
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
+
     def _send_json(self, obj, status=200):
         data = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
