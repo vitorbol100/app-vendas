@@ -259,20 +259,32 @@ async function importarAuto() {
   localStorage.setItem('conebel_app_servidor', servidor);
   const btn = document.getElementById('btnAuto');
   btn.textContent = '⏳ Importando...';
+  let r;
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60000);
     const resp = await fetch(servidor + '/pacote?email=' + encodeURIComponent(sess.email) +
-                             '&senha=' + encodeURIComponent(sess.senha));
-    const r = await resp.json();
-    if (r.ok) {
-      PACOTE = r.pacote;
-      localStorage.setItem('conebel_app_dados_' + r.pacote.rn, JSON.stringify(r.pacote));
-      limparDadosOutrosRns(r.pacote.rn);
-      renderizarTudo();
-      alert('✅ Dados do setor ' + r.pacote.rn + ' atualizados!');
-    } else { alert(r.erro || 'Falha na importação.'); }
+                             '&senha=' + encodeURIComponent(sess.senha), {signal: ctrl.signal});
+    clearTimeout(timer);
+    r = await resp.json();
   } catch(e) {
-    alert('Não foi possível conectar ao servidor. Verifique o WiFi e o endereço.');
+    btn.textContent = '⚡ Importar Automático';
+    alert('Não foi possível conectar ao servidor (' + (e.name === 'AbortError' ? 'tempo esgotado' : 'sem conexão') + '). Verifique o WiFi e o endereço.');
+    return;
   }
+  if (!r.ok) { btn.textContent = '⚡ Importar Automático'; alert(r.erro || 'Falha na importação.'); return; }
+  PACOTE = r.pacote;
+  // salva no aparelho; se o pacote for grande demais para o armazenamento,
+  // o app continua FUNCIONANDO em memoria (so nao persiste para uso offline)
+  let avisoArmazenamento = '';
+  try {
+    localStorage.setItem('conebel_app_dados_' + r.pacote.rn, JSON.stringify(r.pacote));
+    limparDadosOutrosRns(r.pacote.rn);
+  } catch(e) {
+    avisoArmazenamento = ' (dados grandes demais para salvar no aparelho — o app funciona, mas sem modo offline)';
+  }
+  renderizarTudo();
+  alert('✅ Dados do setor ' + r.pacote.rn + ' atualizados!' + avisoArmazenamento);
   btn.textContent = '⚡ Importar Automático';
 }
 
@@ -289,14 +301,19 @@ document.getElementById('inputArquivo').addEventListener('change', e => {
       const p = JSON.parse(ev.target.result);
       if (!p.rn || !p.base || !p.produtos || !p.vendas) throw new Error('formato inválido');
       PACOTE = p;
-      localStorage.setItem('conebel_app_dados_' + p.rn, JSON.stringify(p));
-      limparDadosOutrosRns(p.rn);
+      let avisoArmazenamento = '';
+      try {
+        localStorage.setItem('conebel_app_dados_' + p.rn, JSON.stringify(p));
+        limparDadosOutrosRns(p.rn);
+      } catch(e) {
+        avisoArmazenamento = ' (dados grandes demais para salvar no aparelho — o app funciona, mas sem modo offline)';
+      }
       if (!sessaoSalva()) {
         const sess = {email: 'conebel.rn' + p.rn + '@gmail.com', senha:'', nome:'RN ' + p.rn, setor:p.rn, offline:true};
         localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
       }
       abrirApp(sessaoSalva());
-      alert('✅ Dados do setor ' + p.rn + ' importados!');
+      alert('✅ Dados do setor ' + p.rn + ' importados!' + avisoArmazenamento);
     } catch(err) { alert('Arquivo inválido: ' + err.message); }
   };
   reader.readAsText(arquivo);
@@ -317,7 +334,11 @@ function abrirApp(sess) {
   document.getElementById('app').style.display = 'block';
   document.getElementById('appUserInfo').textContent =
     sess.nome + ' · Setor ' + sess.setor + (sess.offline ? ' · offline' : '');
-  PACOTE = dadosSalvos(sess.setor);
+  try {
+    PACOTE = dadosSalvos(sess.setor);
+  } catch(e) {
+    PACOTE = null;  // pacote salvo corrompido/grande demais: recomeca com app vazio
+  }
   document.getElementById('servidorAddr').value =
     localStorage.getItem('conebel_app_servidor') || sess.servidor || '';
   renderizarTudo();
