@@ -2,7 +2,7 @@ const CACHE = 'conebel-app-v4';
 const ARQUIVOS = ['app.html', 'Logo_Site.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)));
 });
 
 self.addEventListener('activate', e => {
@@ -18,12 +18,11 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
   // API sempre direto da rede, sem passar pelo SW v4
   if (url.includes('/pacote') || url.includes('/login') || url.includes('/enviar-email') ||
-      url.includes('/upload') || url.includes('/delete') /fotos')) return;
+      url.includes('/upload') || url.includes('/delete') || url.includes('/fotos')) return;
   // REDE PRIMEIRO para todo o resto (site, app, CSVs, js, css, fotos):
-  // garante dado atualizado sempre que ha conexao; cache serve cah offline
+  // garante dado atualizado sempre que ha conexao; cache serve apenas offline
   e.respondWith(
     fetch(e.request).then(resp => {
-      untyped
       const copia = resp.clone();
       caches.open(CACHE).then(c => c.put(e.request, copia));
       return resp;
