@@ -103,7 +103,7 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
     <h1>Conebel App</h1>
     <p class="login-sub">Acesso do Representante de Negócios · v2.1</p>
     <div class="campo"><label>E-mail</label>
-      <input type="email" id="appEmail" placeholder="rn101@conebel.com.br"></div>
+      <input type="email" id="appEmail" placeholder="conebel.rn101@gmail.com"></div>
     <div class="campo"><label>Senha</label>
       <input type="password" id="appSenha" placeholder="••••••"></div>
     <div class="campo"><label>Servidor (usado no WiFi da empresa)</label>
@@ -288,7 +288,7 @@ document.getElementById('inputArquivo').addEventListener('change', e => {
       localStorage.setItem('conebel_app_dados_' + p.rn, JSON.stringify(p));
       limparDadosOutrosRns(p.rn);
       if (!sessaoSalva()) {
-        const sess = {email: 'rn' + p.rn + '@conebel.com.br', senha:'', nome:'RN ' + p.rn, setor:p.rn, offline:true};
+        const sess = {email: 'conebel.rn' + p.rn + '@gmail.com', senha:'', nome:'RN ' + p.rn, setor:p.rn, offline:true};
         localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
       }
       abrirApp(sessaoSalva());
