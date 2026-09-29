@@ -107,7 +107,7 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
     <div class="campo"><label>Senha</label>
       <input type="password" id="appSenha" placeholder="••••••"></div>
     <div class="campo"><label>Servidor (usado no WiFi da empresa)</label>
-      <input type="text" id="appServidor" placeholder="http://192.168.0.10:8000"></div>
+      <input type="text" id="appServidor" placeholder="http://10.0.0.180:8000"></div>
     <button class="btn-entrar" onclick="entrarApp()">Entrar</button>
     <button class="link-manual" onclick="importarManual()">Recebeu o arquivo por e-mail? Importar aqui</button>
     <div class="erro" id="appErro"></div>
@@ -156,7 +156,7 @@ td { padding:7px 9px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
       <p class="muted" style="margin-bottom:12px;">Automático: conectado no WiFi da empresa.<br>
       Manual: com o arquivo recebido por e-mail.</p>
       <div class="campo"><label>Endereço do servidor</label>
-        <input type="text" id="servidorAddr" placeholder="http://192.168.0.10:8000"></div>
+        <input type="text" id="servidorAddr" placeholder="http://10.0.0.180:8000"></div>
       <button class="btn-grande btn-auto" id="btnAuto" onclick="importarAuto()">⚡ Importar Automático</button>
       <button class="btn-grande btn-manual" onclick="importarManual()">📁 Importar Manual</button>
       <input type="file" id="inputArquivo" accept=".json,application/json" hidden>
