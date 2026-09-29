@@ -190,12 +190,80 @@ function statusCliente(s) {
   const ativo = v === '' || v === 'ativo' || v.startsWith('ativ');
   return ativo ? '<span class="badge ok">Ativo</span>' : '<span class="badge bad">Bloqueado</span>';
 }
-function dadosSalvos(rn) {
-  if (rn == null) return null;
-  try { return JSON.parse(localStorage.getItem('conebel_app_dados_' + rn)) || null; } catch(e){ return null; }
-}
+function sessaoSalva() { try { return JSON.parse(localStorage.getItem('conebel_app_sessao')); } catch(e){ return null; } }
 
-function limparDadosOutrosRns(rnAtual) {
+// ===== Armazenamento grande (IndexedDB): pacote completo com fotos =====
+// O localStorage tem cota de ~5MB e estoura com muitas fotos; o IndexedDB
+// aceita centenas de MB — garante TODOS os dados (incluindo fotos) no aparelho
+// para o modo offline do RN na rua.
+function abrirDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('conebel_app', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('pacotes');
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbSet(chave, valor) {
+  const db = await abrirDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('pacotes', 'readwrite');
+    tx.objectStore('pacotes').put(valor, chave);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(chave) {
+  const db = await abrirDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('pacotes', 'readonly');
+    const req = tx.objectStore('pacotes').get(chave);
+    req.onsuccess = () => res(req.result || null);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbDel(chave) {
+  const db = await abrirDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('pacotes', 'readwrite');
+    tx.objectStore('pacotes').delete(chave);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbChaves() {
+  const db = await abrirDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('pacotes', 'readonly');
+    const req = tx.objectStore('pacotes').getAllKeys();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => rej(req.error);
+  });
+}
+// salva o pacote: IndexedDB primeiro; se indisponivel, cai para localStorage
+async function salvarPacote(rn, pacote) {
+  try { await idbSet('dados_' + rn, pacote); return true; }
+  catch(e) {
+    try { localStorage.setItem('conebel_app_dados_' + rn, JSON.stringify(pacote)); return true; }
+    catch(e2) { return false; }
+  }
+}
+// le o pacote: IndexedDB primeiro; fallback localStorage (dados de versoes antigas)
+async function carregarPacote(rn) {
+  if (rn == null) return null;
+  try {
+    const p = await idbGet('dados_' + rn);
+    if (p) return p;
+  } catch(e) {}
+  try { return JSON.parse(localStorage.getItem('conebel_app_dados_' + rn)) || null; } catch(e) { return null; }
+}
+async function limparDadosOutrosRns(rnAtual) {
+  try {
+    const chaves = await idbChaves();
+    for (const k of chaves) {
+      if (k !== 'dados_' + rnAtual) await idbDel(k);
+    }
+  } catch(e) {}
   const remover = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -203,7 +271,6 @@ function limparDadosOutrosRns(rnAtual) {
   }
   remover.forEach(k => localStorage.removeItem(k));
 }
-function sessaoSalva() { try { return JSON.parse(localStorage.getItem('conebel_app_sessao')); } catch(e){ return null; } }
 
 // ===== Login =====
 async function entrarApp() {
@@ -224,14 +291,15 @@ async function entrarApp() {
     const r = await resp.json();
     if (r.ok) {
       const sess = {email, senha, nome: r.usuario.nome, setor: r.usuario.setor, servidor};
-      limparDadosOutrosRns(r.usuario.setor);
+      await limparDadosOutrosRns(r.usuario.setor);
       localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
       localStorage.setItem('conebel_app_servidor', servidor);
       abrirApp(sess);
     } else { erro.textContent = r.erro || 'Falha no login.'; }
   } catch(e) {
+    // sem servidor: modo offline — carrega os dados salvos no aparelho
     const m = email.toLowerCase().match(/rn(\d+)/);
-    const p = m ? dadosSalvos(m[1]) : null;
+    const p = m ? await carregarPacote(m[1]) : null;
     if (p && p.rn) {
       // mantem a senha digitada: permite Importar Automatico quando o servidor voltar
       const sess = {email, senha, nome:'RN ' + p.rn, setor:p.rn, servidor, offline:true};
@@ -274,15 +342,10 @@ async function importarAuto() {
   }
   if (!r.ok) { btn.textContent = '⚡ Importar Automático'; alert(r.erro || 'Falha na importação.'); return; }
   PACOTE = r.pacote;
-  // salva no aparelho; se o pacote for grande demais para o armazenamento,
-  // o app continua FUNCIONANDO em memoria (so nao persiste para uso offline)
-  let avisoArmazenamento = '';
-  try {
-    localStorage.setItem('conebel_app_dados_' + r.pacote.rn, JSON.stringify(r.pacote));
-    limparDadosOutrosRns(r.pacote.rn);
-  } catch(e) {
-    avisoArmazenamento = ' (dados grandes demais para salvar no aparelho — o app funciona, mas sem modo offline)';
-  }
+  // salva o pacote COMPLETO (com fotos) no aparelho para o modo offline
+  const salvo = await salvarPacote(r.pacote.rn, r.pacote);
+  const avisoArmazenamento = salvo ? '' :
+    ' (não foi possível salvar no aparelho — os dados funcionam agora, mas não ficam para uso offline)';
   renderizarTudo();
   alert('✅ Dados do setor ' + r.pacote.rn + ' atualizados!' + avisoArmazenamento);
   btn.textContent = '⚡ Importar Automático';
@@ -296,18 +359,15 @@ document.getElementById('inputArquivo').addEventListener('change', e => {
   const arquivo = e.target.files[0];
   if (!arquivo) return;
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = async ev => {
     try {
       const p = JSON.parse(ev.target.result);
       if (!p.rn || !p.base || !p.produtos || !p.vendas) throw new Error('formato inválido');
       PACOTE = p;
-      let avisoArmazenamento = '';
-      try {
-        localStorage.setItem('conebel_app_dados_' + p.rn, JSON.stringify(p));
-        limparDadosOutrosRns(p.rn);
-      } catch(e) {
-        avisoArmazenamento = ' (dados grandes demais para salvar no aparelho — o app funciona, mas sem modo offline)';
-      }
+      const salvo = await salvarPacote(p.rn, p);
+      const avisoArmazenamento = salvo ? '' :
+        ' (não foi possível salvar no aparelho — os dados funcionam agora, mas não ficam para uso offline)';
+      await limparDadosOutrosRns(p.rn);
       if (!sessaoSalva()) {
         const sess = {email: 'conebel.rn' + p.rn + '@gmail.com', senha:'', nome:'RN ' + p.rn, setor:p.rn, offline:true};
         localStorage.setItem('conebel_app_sessao', JSON.stringify(sess));
@@ -329,16 +389,12 @@ document.querySelectorAll('.tab-app').forEach(t => {
   });
 });
 
-function abrirApp(sess) {
+async function abrirApp(sess) {
   document.getElementById('telaLogin').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('appUserInfo').textContent =
     sess.nome + ' · Setor ' + sess.setor + (sess.offline ? ' · offline' : '');
-  try {
-    PACOTE = dadosSalvos(sess.setor);
-  } catch(e) {
-    PACOTE = null;  // pacote salvo corrompido/grande demais: recomeca com app vazio
-  }
+  PACOTE = await carregarPacote(sess.setor);  // IndexedDB + fallback localStorage
   document.getElementById('servidorAddr').value =
     localStorage.getItem('conebel_app_servidor') || sess.servidor || '';
   renderizarTudo();
@@ -474,9 +530,9 @@ function verHistorico(pdv) {
 }
 
 // ===== Início =====
-(function iniciar() {
+(async function iniciar() {
   const sess = sessaoSalva();
-  if (sess) { abrirApp(sess); }
+  if (sess) { await abrirApp(sess); }
   else {
     document.getElementById('appServidor').value = localStorage.getItem('conebel_app_servidor') || '';
     document.getElementById('telaLogin').style.display = 'flex';
