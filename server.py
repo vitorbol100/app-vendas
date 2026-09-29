@@ -23,7 +23,7 @@ GVS = [
     {'email': 'anisio@conebel.com.br',          'senha': 'conebel2026', 'nome': 'Junior',  'perfil': 'GV', 'sala': 'Junior'},
 ]
 # RNs: e-mail rn<codigo>@conebel.com.br / senha 1234
-SETORES_RN = [str(s) for s in list(range(101, 112)) + list(range(201, 207)) + list(range(301, 309))]
+SETORES_RN = [str(s) for s in list(range(101, 113)) + list(range(201, 208)) + list(range(301, 309))]
 SETORES_RN.remove('206')
 RNs = [{'email': 'conebel.rn' + s + '@gmail.com', 'senha': 'cone2677', 'nome': 'RN ' + s,
         'perfil': 'RN', 'setor': s} for s in SETORES_RN]
